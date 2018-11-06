@@ -4,7 +4,8 @@
 //  This class is the driver for the Bluetooth Low Energy BLE interface to a glucometer
 //
 //  Created by Liam Goudge on 10/15/18.
-//  tag for Git1
+//  This code is provided for the purpose of demonstration. Use is entirely at your own risk. No warranty is provided. No license for use in a commercial product.
+//
 
 import Foundation
 import CoreBluetooth
@@ -14,16 +15,18 @@ protocol BLEProtocol {
     func BLEactivated(state: Bool)
     func BLEfoundPeripheral(device: CBPeripheral, rssi: Int)
     func BLEready(characteristic: CBCharacteristic )
-    func BLEdataRx(data:[ ([Int], [Int]) ])
+    func BLEdataRx(data:[ ([Int], [Int], String) ])
 }
 
 class BLE: NSObject {
     
+    let tempDeviceID: String = "tempDeviceIDValue"
+    
     var delegate: BLEProtocol?
     
     // Members to interact with the Model
-    var dataReceived: ([Int], [Int]) = ([], []) // tuple for a single glucose reading
-    var receivedDataSet: [ ([Int], [Int]) ] = [] // Array of tuples with (measurement, context) as the payload
+    var dataReceived: ([Int], [Int], String) = ([], [],"") // tuple for a single glucose reading
+    var receivedDataSet: [ ([Int], [Int], String) ] = [] // Array of tuples with (measurement, context, device ID) as the payload
  
     // Members related to BLE
     let glucoseServiceCBUUID = CBUUID(string: "0x1808")
@@ -160,18 +163,19 @@ extension BLE: CBPeripheralDelegate {
             case glucoseMeasurementCharacteristicCBUUID:
                 // Glucose measurement value
                 dataReceived.0 = outputDataArray
+                dataReceived.2 = tempDeviceID
                 
                 if (outputDataArray[0] & 0b10000) == 0 {
                     // No context attached, just do the write
                     receivedDataSet.append(dataReceived)
-                    dataReceived = ([],[]) // reset the received tuple
+                    dataReceived = ([],[], "") // reset the received tuple
                 }
                 
             case glucoseMeasurementContextCharacteristicCBUUID:
                 // Glucose context value
                 dataReceived.1 = outputDataArray
                 receivedDataSet.append(dataReceived)
-                dataReceived = ([],[]) // reset the received tuple
+                dataReceived = ([],[], "") // reset the received tuple
                 
             case recordAccessControlPointCharacteristicCBUUID:
                 // RACP. Transfer complete. Write to Model.

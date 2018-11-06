@@ -4,7 +4,8 @@
 //  This class is the Model for glucose data. It parses the raw data from the BLE glucometer to derive measurement object parameters
 //
 //  Created by Liam Goudge on 10/15/18.
-//  tag for Git1
+//  This code is provided for the purpose of demonstration. Use is entirely at your own risk. No warranty is provided. No license for use in a commercial product.
+//
 
 import Foundation
 import HealthKit
@@ -15,6 +16,7 @@ class GlucoseData {
     var sensorFlags = Flags()
     
     let hk = HealthKitManager()
+    var sequenceNumber = Int()
     
     enum GlucoseConcentrationUnits {
         case KgperL, molperL
@@ -69,6 +71,7 @@ class GlucoseData {
     }
     
     struct Record {
+        var deviceID: String
         var sequenceNumber:Int
         var baseTime:Date
         var timeOffsetSecs:Int
@@ -80,12 +83,32 @@ class GlucoseData {
         var mealContext: MealPresent
     }
     
+    func readHK() {
+        
+        self.hk.findLastBloodGlucoseInHealthKit(completion: { (result, sequence) -> Void in
+            
+            if !(result) {
+                print("Problem with HK data")
+                self.sequenceNumber = sequence
+            }
+            
+            else {
+                print ("Got HK data OK")
+                print (sequence)
+                self.sequenceNumber = sequence
+            }
+            
+        })
+        
+    }
     
-    func writeRecord(sequenceNumber: Int, baseTime: Date, timeOffsetSecs: Int, glucoseConcentration: Float, glucoseConcentrationUnits: GlucoseConcentrationUnits, bloodType: BloodType, sampleLocation: Location, sensorFlags: Flags, mealContext: MealPresent) {
+    
+    func writeRecord(deviceID: String, sequenceNumber: Int, baseTime: Date, timeOffsetSecs: Int, glucoseConcentration: Float, glucoseConcentrationUnits: GlucoseConcentrationUnits, bloodType: BloodType, sampleLocation: Location, sensorFlags: Flags, mealContext: MealPresent) {
         
         let glucoseValue = glucoseConcentration * 100000 // convert to mg/dL. Should ensure not mols
         
-        let theRecord = Record(sequenceNumber: sequenceNumber,
+        let theRecord = Record(deviceID: deviceID,
+                               sequenceNumber: sequenceNumber,
                                baseTime: baseTime,
                                timeOffsetSecs: timeOffsetSecs,
                                glucoseConcentration: glucoseConcentration,
@@ -99,10 +122,11 @@ class GlucoseData {
         print ("Record added:")
         print (theRecord)
         
-        hk.writeBloodGlucoseToHealthKit(glucoseValue: Double(glucoseValue), timestamp: baseTime, offsetSecs: timeOffsetSecs)
+        hk.writeBloodGlucoseToHealthKit(device: deviceID, sequence: sequenceNumber, glucoseValue: Double(glucoseValue), timestamp: baseTime, offsetSecs: timeOffsetSecs)
+        
     }
     
-    func addNewRecord(newRecord: ([Int],[Int]) ) {
+    func addNewRecord(newRecord: ([Int],[Int], String) ) {
         
         var newMeasurement: [Int] = newRecord.0
         
@@ -144,9 +168,11 @@ class GlucoseData {
         //let sensorAnnunFlag: Bool = (flagByte & 0b1000) > 0 ? parseAnnuciationFlags() : false
         //let contextFlag: Bool = (flagByte & 0b10000) > 0 ? getMoreContext() : false
         
+        let deviceID: String = newRecord.2
         
         // Write the record to the Model
-        self.writeRecord(sequenceNumber: (newMeasurement[2] << 8) | newMeasurement[1],
+        self.writeRecord(deviceID: deviceID,
+                         sequenceNumber: (newMeasurement[2] << 8) | newMeasurement[1],
                          baseTime: UTCRecord ?? Date(),
                          timeOffsetSecs: timeOffsetSecs,
                          glucoseConcentration: glucose,
@@ -156,6 +182,7 @@ class GlucoseData {
                          sensorFlags: sensorFlags,
                          mealContext: mealContext)
     }
+    
     
     func parseAnnuciationFlags() -> Bool {
         
