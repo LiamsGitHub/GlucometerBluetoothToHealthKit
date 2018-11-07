@@ -10,9 +10,11 @@ This code pulls glucose measurements from BLE-enabled BGM and stores it both in:
 * HealthKit. Many apps and EHRs have HealthKit integration and can use HK as a channel to import glucose data.
 * Open format. Developer can integrate into other database systems.
 	
-The code was developed using a Contour Next One BGM since it was found in a study published by the American Diabetes Association to be the most accurate of the set of 18 BGMs tested and one of the few to meet the FDA accuracy standard for glucometers.
+The code was developed using a Contour Next One BGM since it was found in a study published by the Diabetes Technology Society to be the most accurate of the set of 18 BGMs tested and one of the few to meet the FDA accuracy standard for glucometers:
+https://www.diabetestechnology.org/surveillance.shtml
 
-The Bluetooth Forum developed a standard “GATT” profile for BGMs. Details can be found here.
+The Bluetooth Forum developed a standard “GATT” profile for BGMs. Details can be found here:
+https://www.bluetooth.com/specifications/gatt/viewer?attributeXmlFile=org.bluetooth.service.glucose.xml
 
 At the top level, reads from the BGM via its “Record Access Control Point (RACP)” characteristic. The code writes to RACP requesting data from the glucose measurement and glucose measurement context characteristics. Given the asynchronous nature of the response from the BLE device, a notification system is used to let the app now when a response has been received. To subscribe to those notifications, the code needs to register for glucose measurement notifications with RACP.
 
@@ -49,7 +51,8 @@ Uses a Protocol “BLEProtocol” to enable the ViewController to receive notifi
 
 Once connection to the BLE device is set, commands can be issued as an array of UInt8. Commands for glucometer measurement and context are sent to the RACP characteristic.
 
-Measurement data back from the BGM is received in an array of 15 UInt8 bytes per the GATT standard and is set out like this: 
+Measurement data back from the BGM is received in an array of 15 UInt8 bytes per the GATT standard and is set out like this:
+https://www.bluetooth.com/specifications/gatt/viewer?attributeXmlFile=org.bluetooth.characteristic.glucose_measurement.xml
 
 There sometimes then follows a “context” message that supplies extra information such as device battery level of a further 4 UInt8. Example data looks like this:
 ```
