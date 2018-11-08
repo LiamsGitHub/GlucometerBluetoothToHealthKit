@@ -16,7 +16,7 @@ https://www.diabetestechnology.org/surveillance.shtml
 The Bluetooth Forum developed a standard “GATT” profile for BGMs. Details can be found here:
 https://www.bluetooth.com/specifications/gatt/viewer?attributeXmlFile=org.bluetooth.service.glucose.xml
 
-Reads from the BGM are performed via its “Record Access Control Point (RACP)” characteristic. The code writes to RACP requesting data frreadsom the Bluetooth Glucose Measurement and Glucose Measurement Context characteristics.
+Reads from the BGM are performed via its “Record Access Control Point (RACP)” characteristic. The code writes to RACP requesting data from the Bluetooth Glucose Measurement and Glucose Measurement Context characteristics.
 
 Examples of RACP commands (which are sparsely documented in the spec and that I had to discover iteratively):
 
