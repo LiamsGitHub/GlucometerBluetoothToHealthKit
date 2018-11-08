@@ -1,7 +1,7 @@
 //
 //  HealthKitManager.swift
 //  Glucometer
-//  This is the interface between the GlucoseRecord class and the HealthKit record
+//  This is the interface between the GlucoseRecord Model and the HealthKit record
 //
 //  Created by Liam Goudge on 10/19/18.
 //  This code is provided for the purpose of demonstration. Use is entirely at your own risk. No warranty is provided. No license for use in a commercial product.

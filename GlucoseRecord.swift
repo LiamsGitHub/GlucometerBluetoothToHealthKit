@@ -1,7 +1,7 @@
 //
 //  GlucoseRecord.swift
 //  Glucometer
-//  This class is the Model for glucose data. It parses the raw data from the BLE glucometer to derive measurement object parameters
+//  This class is the Model for glucose data. It parses the raw data from the BLE glucometer to derive measurement object parameters. Manages HealthKit interaction.
 //
 //  Created by Liam Goudge on 10/15/18.
 //  This code is provided for the purpose of demonstration. Use is entirely at your own risk. No warranty is provided. No license for use in a commercial product.
@@ -15,7 +15,7 @@ class GlucoseData {
     var viewControllerHandle: ViewController!
     
     var records = [Record]()
-    var sensorFlags = Flags()
+    var sensorFlags = Flags() // Not doing anything yet with the device data received from the BGM
     
     let hk = HealthKitManager()
     var sequenceNumber = Int()
@@ -68,10 +68,9 @@ class GlucoseData {
     
     func writeRecord(deviceID: String, sequenceNumber: Int, baseTime: Date, timeOffsetSecs: Int, glucoseConcentration: Float, glucoseConcentrationUnits: String, sampleType: String, sampleLocation: String, mealContext: String) {
         
-        
         var glucoseValueHK = Float()
         
-        if glucoseConcentrationUnits == "KgperL" {
+        if glucoseConcentrationUnits == "KgperL" { // this is the Bluetooth GATT standard unit for blood glucose
             glucoseValueHK = glucoseConcentration * 100000 // convert to mg/dL for HK
         }
         

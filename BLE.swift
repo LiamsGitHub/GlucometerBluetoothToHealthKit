@@ -10,7 +10,7 @@
 import Foundation
 import CoreBluetooth
 
-// Protocol to allow BLE event notification
+// Protocol to allow BLE event notification in ViewController
 protocol BLEProtocol {
     func BLEactivated(state: Bool)
     func BLEfoundPeripheral(device: CBPeripheral, rssi: Int)

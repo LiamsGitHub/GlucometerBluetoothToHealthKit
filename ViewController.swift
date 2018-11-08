@@ -15,12 +15,12 @@ class ViewController: UIViewController, BLEProtocol {
     
     let TEST_MODE = false
 
-    var glucoseDataset: GlucoseData!
+    var glucoseDataset: GlucoseData! // Handle to the Model
     
     var bluetoothHandle = BLE()
     var peripherals: [CBPeripheral] = []
     var glucometer: CBPeripheral!
-    var RACP: CBCharacteristic!
+    var RACP: CBCharacteristic! // BGM Record Access Control Point
     
     let glucometerDeviceID:String = "A2C0B9C9-5A19-7EB1-2803-13765719E15E" // Locked to one BGM. Real app would do a TableView to select device.
     
@@ -37,15 +37,13 @@ class ViewController: UIViewController, BLEProtocol {
         // 1,5 get first record
         // 1,3,1,45,0 extract from record 45 onwards
         
-        let seq:Int = glucoseDataset.sequenceNumber + 1
+        let seq:Int = glucoseDataset.sequenceNumber + 1 // sequenceNumber is the last glucose record that was written to HK
         
         let seqLowByte: UInt8 = UInt8(0xff & (seq))
         let seqHighByte: UInt8 = UInt8(seq >> 8)
         
-        // print ("HK Seq: \(seq) LB: \(seqLowByte) HB: \(seqHighByte)")
-        
         textDisplay.text.append("Fetch data starting sequence #: \(glucoseDataset.sequenceNumber) \n")
-        bluetoothHandle.doWrite(peripheral: glucometer, characteristic: RACP, message: [1,3,1,seqLowByte,seqHighByte])
+        bluetoothHandle.doWrite(peripheral: glucometer, characteristic: RACP, message: [1,3,1,seqLowByte,seqHighByte]) // Ask BGM for all records since last one written to HK
         syncButton.isEnabled = false
     }
     
@@ -137,7 +135,7 @@ class ViewController: UIViewController, BLEProtocol {
     }
     
     
-    // Test function to allow development on downstream data handling without firing up BLE device
+    // Test function to allow development on downstream data handling without firing up BLE device ... so can use iPhone simulator
     func startTest() {
         
         var receivedDataSet: [ ([Int], [Int], String) ] = [] // Array of tuples with (measurement, context) as the payload
@@ -151,9 +149,6 @@ class ViewController: UIViewController, BLEProtocol {
         receivedDataSet.append( ([19, 54, 0, 226, 7, 10, 25, 17, 0, 0, 0,  0,   150, 176, 241], [2, 52, 0, 4], glucometerDeviceID)) // newest date
         receivedDataSet.append( ([19, 55, 0, 226, 7, 10, 20, 17, 0, 0, 0,  0,   140, 176, 241], [2, 52, 0, 4], glucometerDeviceID))
         
-        print ("In startTest")
-        
-
         for (meas,context,id) in receivedDataSet {
             print ("Measure: \(meas) Context: \(context) Device: \(id)")
             glucoseDataset.addNewRecord(newRecord: (meas,context,id) )
