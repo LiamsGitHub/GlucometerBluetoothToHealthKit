@@ -16,17 +16,19 @@ https://www.diabetestechnology.org/surveillance.shtml
 The Bluetooth Forum developed a standard “GATT” profile for BGMs. Details can be found here:
 https://www.bluetooth.com/specifications/gatt/viewer?attributeXmlFile=org.bluetooth.service.glucose.xml
 
-At the top level, reads from the BGM via its “Record Access Control Point (RACP)” characteristic. The code writes to RACP requesting data from the glucose measurement and glucose measurement context characteristics. Given the asynchronous nature of the response from the BLE device, a notification system is used to let the app now when a response has been received. To subscribe to those notifications, the code needs to register for glucose measurement notifications with RACP.
+At the top level, reads from the BGM are performed via its “Record Access Control Point (RACP)” characteristic. The code writes to RACP requesting data from the Bluetooth Glucose Measurement and Glucose Measurement Context characteristics.
 
 Examples of RACP commands (which are sparsely undocumented in the spec and that I had to discover iteratively):
 
-- 1,1			Read all records
-- 4,1			Number of records
-- 1,6			Read last record received
-- 1,5			Read first record
-- 1,3,1,45,0	    Read extract from record 45 onwards
+- [1,1]			Read all records
+- [4,1]			Number of records
+- [1,6]			Read last record received
+- [1,5]			Read first record
+- [1,3,1,45,0]	    Read extract from record 45 onwards
 
 These are all sent as UInt8 values.
+
+Given the asynchronous nature of responses from the BLE device, a notification system is used to let the app know when a response has been received. To subscribe to those notifications, the code registers for glucose measurement notifications with RACP.
 
 # Code
 
