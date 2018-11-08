@@ -49,7 +49,7 @@ class HealthKitManager {
     }
 
     
-    func writeBloodGlucoseToHealthKit(device: String, sequence: Int, glucoseValue: Double, timestamp: Date, offsetSecs: Int) {
+    func writeBloodGlucoseToHealthKit(device: String, sequence: Int, glucoseValue: Double, timestamp: Date, offsetSecs: Int, sampleType: String, sampleLocation: String, mealContext: String) {
         
         print ("Device UUID: \(device) Sequence: \(sequence)")
         
@@ -71,7 +71,10 @@ class HealthKitManager {
                                                  start: timestamp,
                                                  end: timestamp,
                                                  metadata: [HKMetadataKeyTimeZone: tz,
-                                                            "BGMSequenceNumber": String(sequence)])
+                                                            "BGMSequenceNumber": String(sequence),
+                                                            "BloodSampleType": sampleType,
+                                                            "SampleLocation": sampleLocation,
+                                                            "MealContext": mealContext])
         
         healthKitDataStore?.save([glucoseSampleData]) { (success, error) in
             //print("Glucose data saved to HealthKit.")
@@ -108,7 +111,6 @@ class HealthKitManager {
             }
             
             self.sequenceNumber = seq2 as! String
-            print ("Sequence Number: \(self.sequenceNumber)")
             completion(true, Int(self.sequenceNumber) ?? 0)
             
             guard self.sequenceNumber == result.metadata!["BGMSequenceNumber"] as! String? else {
@@ -116,8 +118,6 @@ class HealthKitManager {
                 completion(false, 0)
                 return
             }
-            
-            
             
         }
         self.healthKitDataStore?.execute(query)
@@ -127,18 +127,6 @@ class HealthKitManager {
     
 } // end
 
-/*
-func lengthyTask(completionHandler: (Int) -> Int)
-{
-    let result = completionHandler(42)
-    print(result)
-}
-
-lengthyTask(completionHandler: { number in
-    print(number)
-    return 101
-})
-*/
 
 
 

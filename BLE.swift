@@ -14,7 +14,7 @@ import CoreBluetooth
 protocol BLEProtocol {
     func BLEactivated(state: Bool)
     func BLEfoundPeripheral(device: CBPeripheral, rssi: Int)
-    func BLEready(characteristic: CBCharacteristic )
+    func BLEready(RACPcharacteristic: CBCharacteristic )
     func BLEdataRx(data:[ ([Int], [Int], String) ])
 }
 
@@ -46,17 +46,14 @@ class BLE: NSObject {
     
     
     func startBLE() {
-        print ("Starting BLE")
         centralManager = CBCentralManager(delegate: self, queue: nil)
     }
     
     func scan() {
-        print ("Starting scan")
         centralManager.scanForPeripherals(withServices: [glucoseServiceCBUUID]) // if BLE is powered, kick off scan for BGMs
     }
     
     func connect(peripheral: CBPeripheral) {
-        print ("Stop scan and connect to glucometer")
         centralManager.stopScan()
         centralManager.connect(peripheral)
     }
@@ -93,7 +90,6 @@ extension BLE: CBCentralManagerDelegate {
     
     // Triggered when Connection happens to peripheral delegate function
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
-        print ("Connected to device ")
 
         glucosePeripheral?.discoverServices([glucoseServiceCBUUID]) // Now look for glucose services offered by the glucometer
     }
@@ -133,7 +129,7 @@ extension BLE: CBPeripheralDelegate {
             }
             
             if (characteristic.uuid == recordAccessControlPointCharacteristicCBUUID) {
-                delegate?.BLEready(characteristic: characteristic)
+                delegate?.BLEready(RACPcharacteristic: characteristic)
             }
         }
         
@@ -180,7 +176,6 @@ extension BLE: CBPeripheralDelegate {
             case recordAccessControlPointCharacteristicCBUUID:
                 // RACP. Transfer complete. Write to Model.
                 
-                print ("Received data to write to database: ")
                 delegate?.BLEdataRx(data: receivedDataSet)
                 
             default:

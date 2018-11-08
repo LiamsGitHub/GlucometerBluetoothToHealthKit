@@ -12,47 +12,13 @@ import HealthKit
 
 class GlucoseData {
     
+    var viewControllerHandle: ViewController!
+    
     var records = [Record]()
     var sensorFlags = Flags()
     
     let hk = HealthKitManager()
     var sequenceNumber = Int()
-    
-    enum GlucoseConcentrationUnits {
-        case KgperL, molperL
-    }
-    
-    enum BloodType {
-        case Reserved
-        case CapillaryWholeBlood
-        case CapillaryPlasma
-        case VenousWholeBlood
-        case VenousPlasma
-        case ArterialWholeBlood
-        case ArterialPlasma
-        case UndeterminedWholeBlood
-        case UndeterminedPlasma
-        case InterstitialFluid
-        case ControlSolution
-    }
-    
-    enum Location {
-        case Reserved
-        case Finger
-        case AlternateSiteTest
-        case Earlobe
-        case ControlSolution
-        case SampleLocationValueNotAvailable
-    }
-    
-    enum MealPresent: Int {
-        case Preprandial = 1
-        case Postprandial = 2
-        case Fasting = 3
-        case Casual = 4
-        case Bedtime = 5
-        case NoMealDefined = 6
-    }
     
     struct Flags {
         var DeviceBatteryLowTrue: Bool = false
@@ -76,11 +42,11 @@ class GlucoseData {
         var baseTime:Date
         var timeOffsetSecs:Int
         var glucoseConcentration:Float
-        var glucoseConcentrationUnits: GlucoseConcentrationUnits
-        var bloodType:BloodType
-        var sampleLocation:Location
-        var sensorFlags: Flags
-        var mealContext: MealPresent
+        var glucoseConcentrationUnits: String
+        var bloodType:String
+        var sampleLocation:String
+        //var sensorFlags: Flags
+        var mealContext: String
     }
     
     func readHK() {
@@ -88,13 +54,10 @@ class GlucoseData {
         self.hk.findLastBloodGlucoseInHealthKit(completion: { (result, sequence) -> Void in
             
             if !(result) {
-                print("Problem with HK data")
-                self.sequenceNumber = sequence
+                self.sequenceNumber = sequence // No HK data on iPhone so is set to zero
             }
             
             else {
-                print ("Got HK data OK")
-                print (sequence)
                 self.sequenceNumber = sequence
             }
             
@@ -103,9 +66,19 @@ class GlucoseData {
     }
     
     
-    func writeRecord(deviceID: String, sequenceNumber: Int, baseTime: Date, timeOffsetSecs: Int, glucoseConcentration: Float, glucoseConcentrationUnits: GlucoseConcentrationUnits, bloodType: BloodType, sampleLocation: Location, sensorFlags: Flags, mealContext: MealPresent) {
+    func writeRecord(deviceID: String, sequenceNumber: Int, baseTime: Date, timeOffsetSecs: Int, glucoseConcentration: Float, glucoseConcentrationUnits: String, sampleType: String, sampleLocation: String, mealContext: String) {
         
-        let glucoseValue = glucoseConcentration * 100000 // convert to mg/dL. Should ensure not mols
+        
+        var glucoseValueHK = Float()
+        
+        if glucoseConcentrationUnits == "KgperL" {
+            glucoseValueHK = glucoseConcentration * 100000 // convert to mg/dL for HK
+        }
+        
+        else {
+            glucoseValueHK = glucoseConcentration // leave as mols/L
+        }
+
         
         let theRecord = Record(deviceID: deviceID,
                                sequenceNumber: sequenceNumber,
@@ -113,24 +86,27 @@ class GlucoseData {
                                timeOffsetSecs: timeOffsetSecs,
                                glucoseConcentration: glucoseConcentration,
                                glucoseConcentrationUnits: glucoseConcentrationUnits,
-                               bloodType: bloodType,
+                               bloodType: sampleType,
                                sampleLocation: sampleLocation,
-                               sensorFlags: sensorFlags,
+                               //sensorFlags: sensorFlags,
                                mealContext: mealContext)
         
         records.append(theRecord)
-        print ("Record added:")
-        print (theRecord)
+        viewControllerHandle.textDisplay.text.append("Store record: \(theRecord) \n\n")
         
-        hk.writeBloodGlucoseToHealthKit(device: deviceID, sequence: sequenceNumber, glucoseValue: Double(glucoseValue), timestamp: baseTime, offsetSecs: timeOffsetSecs)
-        
+        hk.writeBloodGlucoseToHealthKit(device: deviceID,
+                                        sequence: sequenceNumber,
+                                        glucoseValue: Double(glucoseValueHK),
+                                        timestamp: baseTime,
+                                        offsetSecs: timeOffsetSecs,
+                                        sampleType: sampleType,
+                                        sampleLocation: sampleLocation,
+                                        mealContext: mealContext)
     }
     
     func addNewRecord(newRecord: ([Int],[Int], String) ) {
         
         var newMeasurement: [Int] = newRecord.0
-        
-        let mealContext: MealPresent = (newRecord.1 == []) ? .NoMealDefined : MealPresent(rawValue: newRecord.1[3])! // Unwrap. Would be nice to remove later
         
         // First construct the UTC date from base time
         let calendar = Calendar.current
@@ -163,7 +139,43 @@ class GlucoseData {
         let flagByte: UInt8 = UInt8(newMeasurement[0])
         
         let glucoseUnitsFlag: Bool = (flagByte & 0b100) == 1 ? true : false
-        let glucoseUnits: GlucoseConcentrationUnits = (glucoseUnitsFlag == true) ? .molperL : .KgperL
+        let glucoseUnits: String = (glucoseUnitsFlag == true) ? "molperL" : "KgperL"
+        
+        var sampleLocation: String
+        switch (newMeasurement[14] >> 4) { //Sample Location
+        case 15: sampleLocation = "Not available"
+        default: sampleLocation = "Other"
+        }
+        
+        // These are the standard blood sample encodings from Bluetooth Glucose Service GATT
+        
+        var sampleType: String
+        switch ((newMeasurement[14] & 0b1111)) { //Sample Location
+        case 1: sampleType = "Capillary Whole blood"
+        case 10: sampleType = "Control Solution"
+        default: sampleType = "Other"
+        }
+        
+        var meal = String()
+        
+        // These are the standard meal encodings from Bluetooth Glucose Service GATT
+        
+        if (newRecord.1 != [] ) { // check for meal context present
+            if (newRecord.1[0] == 2) {
+                let carbID = newRecord.1[3]
+                switch (carbID) {
+                case 1: meal = "Preprandial"
+                case 2: meal = "Postprandial"
+                case 3: meal = "Fasting"
+                case 4: meal = "Casual"
+                case 5: meal = "Bedtime"
+                default: meal = "Undefined"
+                }
+            }
+        }
+        
+
+        
         
         //let sensorAnnunFlag: Bool = (flagByte & 0b1000) > 0 ? parseAnnuciationFlags() : false
         //let contextFlag: Bool = (flagByte & 0b10000) > 0 ? getMoreContext() : false
@@ -177,23 +189,10 @@ class GlucoseData {
                          timeOffsetSecs: timeOffsetSecs,
                          glucoseConcentration: glucose,
                          glucoseConcentrationUnits: glucoseUnits,
-                         bloodType: BloodType.CapillaryWholeBlood,
-                         sampleLocation: Location.Finger,
-                         sensorFlags: sensorFlags,
-                         mealContext: mealContext)
-    }
-    
-    
-    func parseAnnuciationFlags() -> Bool {
-        
-        print ("Annunciation flags")
-        return true
-    }
-    
-    func getMoreContext() -> Bool {
-        
-        print ("Get more context")
-        return true
+                         sampleType: sampleType,
+                         sampleLocation: sampleLocation,
+                         //sensorFlags: sensorFlags,
+                         mealContext: meal)
     }
     
 }
