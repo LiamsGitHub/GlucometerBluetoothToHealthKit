@@ -5,7 +5,7 @@ Glucometer readings downloaded to iPhone over Bluetooth and written to HealthKit
 
 While newer blood glucose monitors (BGM) have Bluetooth capability (BLE), they are often designed only to sync data to their own clouds. However many applications call for mixing glucose measurements with data like weight, activity, carb consumption from other apps to enable consumers themselves, coaching, or care teams to use the information directly.
 
-This code pulls glucose measurements from BLE-enabled BGM and stores it both in:
+This code pulls glucose measurements from a BLE-enabled BGM and stores in:
 
 * HealthKit. Many apps and EHRs have HealthKit integration and can use HK as a channel to import glucose data.
 * Open format. Developer can integrate into other database systems.
